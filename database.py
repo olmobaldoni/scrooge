@@ -24,11 +24,15 @@ class Database:
             self.__conn.close()
 
     def get(self, table, headings, limit=None):
+        data_result = []
         try:
             query = "SELECT " + ', '.join(headings) + ' FROM {};'.format(table)
-            return self.__cursor.execute(query)
+            for row in self.__cursor.execute(query):
+                data_result.append([row[0], row[1], row[2], row[3]])
+            return data_result
         except sqlite3.Error as e:
             print("Error retrieving data: ", e)
+
         # query = 'SELECT {0} from {1};'.format(columns, table)
         # self.__cursor.execute(query)
         # rows = self.__cursor.fetchall()
@@ -58,12 +62,16 @@ class Database:
         :param data:
         :return: None
         '''
+        print(data)
+        print(data['-TIPO_ENTRATA-'], data['-DATA_MOVIMENTO-'], data['-ENTRATA-'])
+        self.__cursor.execute("INSERT INTO {} VALUES (?,?,?,?);".format(table), ( 'Entrata' if data['-MOVIMENTO_ENTRATA-'] else 'Uscita', data['-TIPO_ENTRATA-'], data['-DATA_MOVIMENTO-'], data['-ENTRATA-']))
+        self.__conn.commit()
         # per scrivere in tutti i campi della tabella
         # self.__cursor.execute("INSERT INTO {} VALUES (?,?,?,?);".format(table), (data[0], data[1], data[2], data[3]))
         # per scrivere solo nel campo ID
         # self.__cursor.execute("INSERT INTO {} (ID) VALUES (?);".format(table), (data[0], ))
         # per scrivere tutti i campi eccetto ID
-        self.__cursor.execute("INSERT INTO {} (NOME, INDIRIZZO, NUMERO_DI_TELEFONO) VALUES (?,?,?);".format(table), (data[0], data[1], data[2]))
+        # self.__cursor.execute("INSERT INTO {} (NOME, INDIRIZZO, NUMERO_DI_TELEFONO) VALUES (?,?,?);".format(table), (data[0], data[1], data[2]))
 
     def update(self, name):
         self.__cursor.execute("UPDATE {} SET ID = 2000".format(name))

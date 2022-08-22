@@ -24,19 +24,16 @@ class Database:
             self.__conn.close()
 
     def get(self, table, headings, limit=None):
-        data_result = []
+
         try:
+            data_result = []
             query = "SELECT " + ', '.join(headings) + ' FROM {};'.format(table)
             for row in self.__cursor.execute(query):
-                data_result.append([row[0], row[1], row[2], row[3]])
+                data_result.append([row[0], row[1], row[2], row[3], row[4]])
             return data_result
         except sqlite3.Error as e:
             print("Error retrieving data: ", e)
 
-        # query = 'SELECT {0} from {1};'.format(columns, table)
-        # self.__cursor.execute(query)
-        # rows = self.__cursor.fetchall()
-        # return rows[len(rows) - limit if limit else 0:]
 
     def get_specified(self, table, headings, condition):
         '''
@@ -62,29 +59,25 @@ class Database:
         :param data:
         :return: None
         '''
-        print(data)
-        print(data['-TIPO_ENTRATA-'], data['-DATA_MOVIMENTO-'], data['-ENTRATA-'])
-        self.__cursor.execute("INSERT INTO {} VALUES (?,?,?,?);".format(table), ( 'Entrata' if data['-MOVIMENTO_ENTRATA-'] else 'Uscita', data['-TIPO_ENTRATA-'], data['-DATA_MOVIMENTO-'], data['-ENTRATA-']))
-        self.__conn.commit()
-        # per scrivere in tutti i campi della tabella
-        # self.__cursor.execute("INSERT INTO {} VALUES (?,?,?,?);".format(table), (data[0], data[1], data[2], data[3]))
-        # per scrivere solo nel campo ID
-        # self.__cursor.execute("INSERT INTO {} (ID) VALUES (?);".format(table), (data[0], ))
-        # per scrivere tutti i campi eccetto ID
-        # self.__cursor.execute("INSERT INTO {} (NOME, INDIRIZZO, NUMERO_DI_TELEFONO) VALUES (?,?,?);".format(table), (data[0], data[1], data[2]))
+        try:
+            if data['-MOVIMENTO_ENTRATA-']:
+                self.__cursor.execute("INSERT INTO {} (TIPO_DI_MOVIMENTO,CATEGORIA,DATA,IMPORTO) VALUES (?,?,?,?);".format(table), ('Entrata', data['-TIPO_ENTRATA-'], data['-DATA_MOVIMENTO-'], data['-ENTRATA-']))
+            elif data['-MOVIMENTO_USCITA-']:
+                self.__cursor.execute("INSERT INTO {} (TIPO_DI_MOVIMENTO,CATEGORIA,DATA,IMPORTO) VALUES (?,?,?,?);".format(table), ('Uscita', data['-TIPO_USCITA-'], data['-DATA_MOVIMENTO-'], data['-USCITA-']))
+        except sqlite3.Error as e:
+            print('Error writing data: ', e)
 
     def update(self, name):
         self.__cursor.execute("UPDATE {} SET ID = 2000".format(name))
 
-    def create_table(self, name, headings):
-        '''
-        Function that shows all tables in the database
-        :param name:
-        :param headings:
-        :return:
-        '''
+    def create_table(self, name):
         try:
-            query = "CREATE TABLE {} (".format(name) + ', '.join(headings) + ');'
+            query = ('''CREATE TABLE {}
+                    (ID                     INTEGER     PRIMARY KEY,
+                     TIPO_DI_MOVIMENTO      TEXT        NOT NULL,
+                     CATEGORIA              TEXT        NOT NULL,
+                     DATA                   TEXT        NOT NULL,
+                     IMPORTO                REAL        NOT NULL);'''.format(name))
             self.__cursor.execute(query)
         except sqlite3.Error as e:
             print('Error creating database: ', e)
@@ -94,12 +87,15 @@ class Database:
         Function that shows all tables in the database
         :return:
         '''
-        tables = []
-        query = "SELECT name FROM sqlite_master WHERE type='table';"
-        self.__cursor.execute(query)
-        for row in self.__cursor.fetchall():
-            tables.append(row[0])
-        return tables
+        try:
+            tables = []
+            query = "SELECT name FROM sqlite_master WHERE type='table';"
+            self.__cursor.execute(query)
+            for row in self.__cursor.fetchall():
+                tables.append(row[0])
+            return tables
+        except sqlite3.Error as e:
+            print('Error retrieving tables: ', e)
 
     def delete_table(self, name):
         '''
@@ -108,6 +104,13 @@ class Database:
         :return:
         '''
         self.__conn.execute("DROP TABLE {}".format(name))
+
+    def delete_row(self, name, row_id):
+        try:
+            query = ('DELETE FROM {0} WHERE ID = {1};'.format(name, row_id))
+            self.__cursor.execute(query)
+        except sqlite3.Error as e:
+            print('Error deleting row: ', e)
 
 
 

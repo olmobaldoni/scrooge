@@ -24,7 +24,13 @@ class Database:
             self.__conn.close()
 
     def get(self, table, headings, limit=None):
-
+        '''
+        Function that returns records from specified table
+        :param table:
+        :param headings:
+        :param limit:
+        :return:
+        '''
         try:
             data_result = []
             query = "SELECT " + ', '.join(headings) + ' FROM {};'.format(table)
@@ -33,7 +39,6 @@ class Database:
             return data_result
         except sqlite3.Error as e:
             print("Error retrieving data: ", e)
-
 
     def get_specified(self, table, headings, condition):
         '''
@@ -49,9 +54,6 @@ class Database:
         except sqlite3.Error as e:
             print("Error retrieving data: ", e)
 
-    def get_last(self, table, columns):
-        return self.get(table, columns, limit=1)[0]
-
     def write(self, table,  data):
         '''
         Function to write data from the interface into the database.
@@ -66,9 +68,6 @@ class Database:
                 self.__cursor.execute("INSERT INTO {} (TIPO_DI_MOVIMENTO,CATEGORIA,DATA,IMPORTO) VALUES (?,?,?,?);".format(table), ('Uscita', data['-TIPO_USCITA-'], data['-DATA_MOVIMENTO-'], data['-USCITA-']))
         except sqlite3.Error as e:
             print('Error writing data: ', e)
-
-    def update(self, name):
-        self.__cursor.execute("UPDATE {} SET ID = 2000".format(name))
 
     def create_table(self, name):
         try:
@@ -99,13 +98,19 @@ class Database:
 
     def delete_table(self, name):
         '''
-        Fuction that delete the specified table from the database
+        Function that delete the specified table from the database
         :param name:
         :return:
         '''
         self.__conn.execute("DROP TABLE {}".format(name))
 
     def delete_row(self, name, row_id):
+        '''
+        Function that delete the specified row from the specified table
+        :param name:
+        :param row_id:
+        :return:
+        '''
         try:
             query = ('DELETE FROM {0} WHERE ID = {1};'.format(name, row_id))
             self.__cursor.execute(query)

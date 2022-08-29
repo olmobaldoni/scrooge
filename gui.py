@@ -231,8 +231,12 @@ def main():
     # event loop
     while True:
         event, values = window.read()
+
+        # close the window
         if event == 'Exit' or event == sg.WINDOW_CLOSED:
             break
+
+        # Add entry
         elif event == 'Submit':
             if (values['-ENTRATA-'] != '' and values['-MOVIMENTO_ENTRATA-']) or (
                     values['-USCITA-'] != '' and values['-MOVIMENTO_USCITA-']):
@@ -241,9 +245,12 @@ def main():
                 window['-TABLE-'].update(values=database_test.get(name_account, table_headers))
                 database_test.close_connection()
                 account_test.change_row_color(window)
+
+        # create a new account
         elif event == 'New':
-            # create a new account
             account_test.create_account()
+
+        # open existing account
         elif event == 'Open':
             name_account = account_test.open_account(window)
             if name_account and name_account != window['-ACTUAL_ACCOUNT-'].get():
@@ -261,6 +268,7 @@ def main():
                 window['-TABLE_1-'].update(values=data)
                 window['-TABLE_2-'].update(values=data)
 
+        # delete existing account
         elif event == 'Delete':
             deleted_account = account_test.delete_account()
             if window['-ACTUAL_ACCOUNT-'].get() == deleted_account:
@@ -283,12 +291,15 @@ def main():
                     window['-TABLE-'].update(values=table_data)
                 database_test.close_connection()
                 account_test.change_row_color(window)
+
+                # show empty figures when deleting the current account
                 fig = Figure(figsize=(6.3, 4.3))
                 account_test.draw_figure_w_toolbar(window['-CANVAS_FIGURE_1-'].TKCanvas, fig, window['-CANVAS_CONTROL_1-'].TKCanvas)
                 account_test.draw_figure_w_toolbar(window['-CANVAS_FIGURE_2-'].TKCanvas, fig, window['-CANVAS_CONTROL_2-'].TKCanvas)
                 window['-TABLE_1-'].update(values=data)
                 window['-TABLE_2-'].update(values=data)
 
+        # delete left table entry
         elif event == 'Delete Row':
             account_test.delete_table_row(window, name_account, values)
             database_test.open_connection('database_accounts.db')
@@ -297,6 +308,7 @@ def main():
             window['-TABLE-'].update(values=table_data)
             account_test.change_row_color(window)
 
+        # select movement category to analyse
         elif event == '-RADIO_ENTRATA_2-':
             visible = not window['FRAME_1'].metadata
             window['FRAME_1'].update(visible=visible)
@@ -305,7 +317,6 @@ def main():
                 visible = False
                 window['FRAME_2'].update(visible=visible)
                 window['FRAME_2'].metadata = visible
-
         elif event == '-RADIO_USCITA_2-':
             visible = not window['FRAME_2'].metadata
             window['FRAME_2'].update(visible=visible)
@@ -315,9 +326,11 @@ def main():
                 window['FRAME_1'].update(visible=visible)
                 window['FRAME_1'].metadata = visible
 
+        # analyse data
         elif event == '-ANALYSE-' and (values['-RADIO_ENTRATA_2-'] or values['-RADIO_USCITA_2-']):
             month_df, year_df = account_test.analyse_data(name_account, values, window)
 
+        # save data as excel file
         elif event == '-SAVE_BUTTON_MONTH-' or event == '-SAVE_BUTTON_YEAR-':
             account_test.save_data_as_excel(values, month_df, year_df)
 

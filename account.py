@@ -184,23 +184,29 @@ class Account:
             year_df = pd.DataFrame(columns=['DATA', 'IMPORTO'])
             return month_df, year_df
 
+        # if the dataframe is not empty, create a new dataframe filtered according to the selection
         elif not df.empty:
             df['DATA'] = pd.to_datetime(df.DATA, format="%d-%m-%Y")
             if data['-RADIO_ENTRATA_2-']:
-                movimento = 'Entrata'
-                tipo_movimento = data['-TIPO_ENTRATA_2-']
+                accounting_entry = 'Entrata'
+                accounting_entry_type = data['-TIPO_ENTRATA_2-']
             elif data['-RADIO_USCITA_2-']:
-                movimento = 'Uscita'
-                tipo_movimento = data['-TIPO_USCITA_2-']
+                accounting_entry = 'Uscita'
+                accounting_entry_type = data['-TIPO_USCITA_2-']
+
+            # filtered dataframe
             rslt_df = df[
-                (df['TIPO_DI_MOVIMENTO'] == '{}'.format(movimento)) & (df['CATEGORIA'] == '{}'.format(tipo_movimento))]
+                (df['TIPO_DI_MOVIMENTO'] == '{}'.format(accounting_entry)) & (df['CATEGORIA'] == '{}'.format(accounting_entry_type))]
+
+            # if the filtered dataframe is empty, generate a popup and return two empty dataframes
             if rslt_df.empty:
                 sg.popup_no_titlebar('Non sono presenti movimenti per questa categoria!', font=font)
                 month_df = pd.DataFrame(columns=['DATA', 'IMPORTO'])
                 year_df = pd.DataFrame(columns=['DATA', 'IMPORTO'])
                 return month_df, year_df
+
+            # generate graphs on the gui
             else:
-                # Parte che serve per stampare i grafici sul canvas della gui
                 sns.set()
                 fig = Figure()
                 ax = fig.add_subplot()
@@ -215,7 +221,7 @@ class Account:
                     figsize=(6.3, 4.3), ax=ax, xlabel='DATA', ylabel='IMPORTO')
                 self.draw_figure_w_toolbar(window['-CANVAS_FIGURE_2-'].TKCanvas, fig, window['-CANVAS_CONTROL_2-'].TKCanvas)
 
-                # Parte che serve per stampare la tabella sulla gui
+                # generates month and year dataframes
                 month_df = rslt_df.loc[:, rslt_df.columns != 'ID'].groupby(
                     pd.Grouper(key='DATA', axis=0, freq='M')).sum().reset_index()
                 year_df = rslt_df.loc[:, rslt_df.columns != 'ID'].groupby(
@@ -232,12 +238,21 @@ class Account:
                 return month_df, year_df
 
     def save_data_as_excel(self, data, month_df, year_df):
+        """
+        Method that saves analyses in an Excel file
+        :param data:
+        :param month_df:
+        :param year_df:
+        :return:
+        """
         movement_type = data['-TIPO_ENTRATA_2-'] if data['-TIPO_ENTRATA_2-'] != '' else data['-TIPO_USCITA_2-']
+
         if data['-SAVE_BUTTON_MONTH-'] != '':
             excel_file = data['-SAVE_BUTTON_MONTH-']
             sheet_name = 'Month_Report'
             writer = pd.ExcelWriter(excel_file, engine='xlsxwriter')
             month_df.to_excel(writer, sheet_name=sheet_name, index=False)
+
             # Access the XlsxWriter workbook and worksheet objects from the dataframe.
             workbook = writer.book
             worksheet = writer.sheets[sheet_name]
@@ -253,20 +268,25 @@ class Account:
                 'values': '=Month_Report!$B$2:$B$' + cell,
                 'line': {'color': 'blue'},
             })
+
             # Configure the chart axes.
             chart.set_x_axis({'name': 'DATA', 'position_axis': 'on_tick'})
             chart.set_y_axis({'name': 'IMPORTO', 'major_gridlines': {'visible': True}})
+
             # Turn off chart legend. It is on by default in Excel.
             chart.set_legend({'position': 'none'})
             chart.set_size({'x_scale': 4, 'y_scale': 1.5})
             chart.set_title({'name': '{} - Mese'.format(movement_type)})
+
             # Insert the chart into the worksheet.
             worksheet.insert_chart('D2', chart)
+
         else:
             excel_file = data['-SAVE_BUTTON_YEAR-']
             sheet_name = 'Year_Report'
             writer = pd.ExcelWriter(excel_file, engine='xlsxwriter')
             year_df.to_excel(writer, sheet_name=sheet_name, index=False)
+
             # Access the XlsxWriter workbook and worksheet objects from the dataframe.
             workbook = writer.book
             worksheet = writer.sheets[sheet_name]
@@ -282,13 +302,17 @@ class Account:
                 'values': '=Year_Report!$B$2:$B$' + cell,
                 'line': {'color': 'red'},
             })
+
             # Configure the chart axes.
             chart.set_x_axis({'name': 'DATA', 'position_axis': 'on_tick'})
             chart.set_y_axis({'name': 'IMPORTO', 'major_gridlines': {'visible': True}})
+
             # Turn off chart legend. It is on by default in Excel.
             chart.set_legend({'position': 'none'})
             chart.set_size({'x_scale': 4, 'y_scale': 1.5})
             chart.set_title({'name': '{} - Anno'.format(movement_type)})
+
             # Insert the chart into the worksheet.
             worksheet.insert_chart('D2', chart)
+
         writer.save()
